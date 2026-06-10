@@ -3,223 +3,348 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>イベント時間調整スケジューラー</title>
+    <title>御影会 スケジュール調整（7月12日）</title>
     <style>
-        :root {
-            --primary-color: #2b579a;
-            --primary-hover: #1e3d6b;
-            --bg-color: #f4f6f9;
-            --card-bg: #ffffff;
-            --text-color: #333333;
-            --border-color: #dddddd;
-            --success-color: #28a745;
-            --danger-color: #dc3545;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", sans-serif;
-            background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding: 20px;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .container { max-width: 900px; margin: 0 auto; }
-        header {
-            text-align: center; margin-bottom: 30px; background: linear-gradient(135deg, var(--primary-color), #43a047);
-            color: white; padding: 30px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-        header h1 { font-size: 24px; margin-bottom: 10px; }
-        header p { font-size: 14px; opacity: 0.9; }
-        .card { background-color: var(--card-bg); border-radius: 10px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .card h2 { font-size: 18px; margin-bottom: 15px; border-left: 4px solid var(--primary-color); padding-left: 10px; color: var(--primary-color); }
-        .form-group { margin-bottom: 15px; }
-        .form-row { display: flex; gap: 15px; flex-wrap: wrap; }
-        .form-row .form-group { flex: 1; min-width: 120px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
-        input[type="text"], input[type="time"], select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 14px; color: #333; }
-        button { background-color: var(--primary-color); color: white; border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; }
-        button:hover { background-color: var(--primary-hover); }
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-        th, td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); }
-        th { background-color: #f8f9fa; font-weight: bold; color: #555; }
-        tr:hover { background-color: #fdfdfd; }
-        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-        .status-ok { background-color: #d4edda; color: #155724; }
-        .status-pending { background-color: #fff3cd; color: #856404; }
-        .status-ng { background-color: #f8d7da; color: #721c24; }
-        .delete-btn { background-color: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); padding: 5px 10px; font-size: 12px; border-radius: 3px; cursor: pointer; }
-        .delete-btn:hover { background-color: var(--danger-color); color: white; }
-        .no-data { text-align: center; color: #999; padding: 30px; }
-        .download-box { text-align: center; background-color: #e2e8f0; padding: 15px; border-radius: 8px; font-size: 13px; }
-        .download-box button { background-color: #4a5568; width: auto; display: inline-block; padding: 8px 15px; font-size: 13px; margin-top: 0; }
+        h1 {
+            font-size: 24px;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        .date-info {
+            text-align: center;
+            font-size: 18px;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #495057;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        @media (max-width: 600px) {
+            .time-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        .time-checkbox {
+            display: none;
+        }
+        .time-label {
+            display: block;
+            background: #fff;
+            border: 2px solid #ced4da;
+            padding: 10px;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .time-checkbox:checked + .time-label {
+            background: #3498db;
+            color: #fff;
+            border-color: #3498db;
+        }
+        .btn-submit {
+            display: block;
+            width: 100%;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover {
+            background: #27ae60;
+        }
+        .table-responsive {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 15px;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 12px 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f1f3f5;
+            color: #495057;
+        }
+        .status-cell {
+            font-weight: bold;
+        }
+        .status-ok {
+            background-color: #e8f8f5;
+            color: #1abc9c;
+        }
+        .status-no {
+            background-color: #fdf2e9;
+            color: #e67e22;
+        }
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+        .summary-box {
+            margin-top: 15px;
+            background: #eaf2f8;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #3498db;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header>
-        <h1>御影会時間調整スケジューラー</h1>
-        <p>各自の参加可能な時間帯を入力して「登録」を押してください</p>
-    </header>
+    <h1>御影会 スケジュール調整</h1>
+    <div class="date-info">日時：7月12日(日) 12:00 ～ 17:00</div>
 
-    <div class="card">
-        <h2>あなたの予定を入力</h2>
-        <form id="schedulerForm" onsubmit="addSchedule(event)">
+    <div class="form-section">
+        <form id="scheduleForm">
             <div class="form-group">
-                <label for="name">お名前 <span style="color:red;">*</span></label>
-                <input type="text" id="name" placeholder="例：山田 太郎" required>
+                <label for="userName">お名前</label>
+                <input type="text" id="userName" placeholder="例：山田 太郎" required>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="status">参加可否</label>
-                    <select id="status">
-                        <option value="〇">〇 参加可能</option>
-                        <option value="△">△ 途中有り/未定</option>
-                        <option value="×">× 不参加</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="startTime">開始時間</label>
-                    <input type="time" id="startTime" value="13:00">
-                </div>
-                <div class="form-group">
-                    <label for="endTime">終了時間</label>
-                    <input type="time" id="endTime" value="18:00">
-                </div>
-            </div>
+            
             <div class="form-group">
-                <label for="memo">備考・連絡事項</label>
-                <input type="text" id="memo" placeholder="例：15時頃に一度抜けます、片付け残れます等">
+                <label>参加可能な時間帯（複数選択可）</label>
+                <div class="time-grid">
+                    <div>
+                        <input type="checkbox" id="t1" class="time-checkbox" value="12:00-12:30">
+                        <label for="t1" class="time-label">12:00-12:30</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="t2" class="time-checkbox" value="12:30-13:00">
+                        <label for="t2" class="time-label">12:30-13:00</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="t3" class="time-checkbox" value="13:00-13:30">
+                        <label for="t3" class="time-label">13:00-13:30</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="t4" class="time-checkbox" value="13:30-14:00">
+                        <label for="t4" class="time-label">13:30-14:00</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="t5" class="time-checkbox" value="14:00-14:30">
+                        <label for="t5" class="time-label">14:00-14:30</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="t6" class="time-checkbox" value="14:30-15:00">
+                        <label for="t6" class="time-label">14:30-15:00</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="t7" class="time-checkbox" value="15:00-15:30">
+                        <label for="t7" class="time-label">15:00-15:30</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="t8" class="time-checkbox" value="15:30-16:00">
+                        <label for="t8" class="time-label">15:30-16:00</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="t9" class="time-checkbox" value="16:00-16:30">
+                        <label for="t9" class="time-label">16:00-16:30</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="t10" class="time-checkbox" value="16:30-17:00">
+                        <label for="t10" class="time-label">16:30-17:00</label>
+                    </div>
+                </div>
             </div>
-            <button type="submit">この内容で登録する</button>
+            
+            <button type="submit" class="btn-submit">この時間で登録する</button>
         </form>
     </div>
 
-    <div class="card">
-        <h2>現在の回答状況一覧</h2>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>お名前</th>
-                        <th>可否</th>
-                        <th>参加可能時間</th>
-                        <th>備考・連絡事項</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-            <div id="noDataMessage" class="no-data">まだ回答はありません。最初の回答をどうぞ！</div>
-        </div>
+    <h2>参加状況一覧</h2>
+    <div class="table-responsive">
+        <table id="attendanceTable">
+            <thead>
+                <tr>
+                    <th>名前</th>
+                    <th>12:00<br>12:30</th>
+                    <th>12:30<br>13:00</th>
+                    <th>13:00<br>13:30</th>
+                    <th>13:30<br>14:00</th>
+                    <th>14:00<br>14:30</th>
+                    <th>14:30<br>15:00</th>
+                    <th>15:00<br>15:30</th>
+                    <th>15:30<br>16:00</th>
+                    <th>16:00<br>16:30</th>
+                    <th>16:30<br>17:00</th>
+                    <th>管理</th>
+                </tr>
+            </thead>
+            <tbody id="attendanceBody">
+                </tbody>
+        </table>
     </div>
 
-    <div class="download-box">
-        <p style="margin-bottom: 10px;">全員の入力が終わったら、管理者は以下のボタンからデータを保存（バックアップ）できます。</p>
-        <button id="downloadCsv" onclick="downloadCsvData()">CSV形式でデータをダウンロード</button>
+    <div class="summary-box">
+        <strong>💡 データの保存について:</strong><br>
+        このページに入力されたデータは、お使いのブラウザ（LocalStorage）に自動保存されます。同じパソコンやスマホであれば、ページを閉じてもデータは残ります。
     </div>
 </div>
 
 <script>
-    // メモリ上の配列だけでシンプルに管理（ブラウザエラーの起きない設計）
-    let scheduleData = [];
+    const slots = [
+        "12:00-12:30", "12:30-13:00", "13:00-13:30", "13:30-14:00", "14:00-14:30",
+        "14:30-15:00", "15:00-15:30", "15:30-16:00", "16:00-16:30", "16:30-17:00"
+    ];
 
-    // フォーム送信時に呼び出される関数
-    function addSchedule(event) {
-        event.preventDefault(); // 画面リロードを防ぐ
-        
-        try {
-            const name = document.getElementById('name').value.trim();
-            const status = document.getElementById('status').value;
-            const startTime = document.getElementById('startTime').value || '--:--';
-            const endTime = document.getElementById('endTime').value || '--:--';
-            const memo = document.getElementById('memo').value.trim();
+    // ローカルストレージから読み込み
+    let attendanceData = JSON.parse(localStorage.getItem('mikagekai_schedule')) || [];
 
-            if (!name) {
-                alert('お名前を入力してください。');
-                return;
-            }
+    const form = document.getElementById('scheduleForm');
+    const tableBody = document.getElementById('attendanceBody');
 
-            // 配列にデータを追加
-            scheduleData.push({ name, status, startTime, endTime, memo });
-            
-            // テーブルを表示更新
-            renderTable();
-            
-            // 入力欄をクリア
-            document.getElementById('name').value = '';
-            document.getElementById('memo').value = '';
-            
-        } catch (error) {
-            alert('登録中にエラーが発生しました: ' + error.message);
-        }
-    }
-
-    // テーブルを描画する関数
+    // テーブルの描画
     function renderTable() {
-        const tbody = document.getElementById('tableBody');
-        const noData = document.getElementById('noDataMessage');
+        tableBody.innerHTML = '';
         
-        tbody.innerHTML = '';
-
-        if (scheduleData.length === 0) {
-            noData.style.display = 'block';
+        if (attendanceData.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="${slots.length + 2}" style="color:#999; padding:20px;">まだ登録はありません</td></tr>`;
             return;
         }
-        noData.style.display = 'none';
 
-        scheduleData.forEach((item, index) => {
+        attendanceData.forEach((user, index) => {
             const tr = document.createElement('tr');
             
-            let badgeClass = 'status-ok';
-            if (item.status === '△') badgeClass = 'status-pending';
-            if (item.status === '×') badgeClass = 'status-ng';
+            // 名前
+            const nameTd = document.createElement('td');
+            nameTd.textContent = user.name;
+            nameTd.style.fontWeight = 'bold';
+            tr.appendChild(nameTd);
             
-            let timeText = ' - ';
-            if (item.status !== '×') {
-                timeText = `${item.startTime} 〜 ${item.endTime}`;
-            }
-
-            tr.innerHTML = `
-                <td style="font-weight: bold;">${escapeHtml(item.name)}</td>
-                <td><span class="status-badge ${badgeClass}">${escapeHtml(item.status)}</span></td>
-                <td>${escapeHtml(timeText)}</td>
-                <td style="color: #555;">${escapeHtml(item.memo || '-')}</td>
-                <td><button class="delete-btn" onclick="deleteItem(${index})">削除</button></td>
-            `;
-            tbody.appendChild(tr);
+            // 各時間枠のステータス
+            slots.forEach(slot => {
+                const td = document.createElement('td');
+                td.classList.add('status-cell');
+                if (user.times.includes(slot)) {
+                    td.textContent = '○';
+                    td.classList.add('status-ok');
+                } else {
+                    td.textContent = '-';
+                    td.classList.add('status-no');
+                }
+                tr.appendChild(td);
+            });
+            
+            // 削除ボタン
+            const actionTd = document.createElement('td');
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = '削除';
+            deleteBtn.classList.add('delete-btn');
+            deleteBtn.onclick = () => deleteUser(index);
+            actionTd.appendChild(deleteBtn);
+            tr.appendChild(actionTd);
+            
+            tableBody.appendChild(tr);
         });
     }
 
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
+    // データ追加
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nameInput = document.getElementById('userName');
+        const name = nameInput.value.trim();
+        
+        const checkedTimes = [];
+        slots.forEach((slot, i) => {
+            const checkbox = document.getElementById(`t${i+1}`);
+            if (checkbox.checked) {
+                checkedTimes.push(slot);
+            }
+        });
 
-    // 削除機能
-    window.deleteItem = function(index) {
-        if (confirm('この回答を削除してもよろしいですか？')) {
-            scheduleData.splice(index, 1);
+        if (name) {
+            attendanceData.push({ name: name, times: checkedTimes });
+            localStorage.setItem('mikagekai_schedule', JSON.stringify(attendanceData));
+            renderTable();
+            
+            // フォームリセット
+            nameInput.value = '';
+            slots.forEach((slot, i) => {
+                document.getElementById(`t${i+1}`).checked = false;
+            });
+        }
+    });
+
+    // データ削除
+    function deleteUser(index) {
+        if (confirm(`${attendanceData[index].name}さんのデータを削除しますか？`)) {
+            attendanceData.splice(index, 1);
+            localStorage.setItem('mikagekai_schedule', JSON.stringify(attendanceData));
             renderTable();
         }
-    };
+    }
 
-    // CSVダウンロード機能
-    window.downloadCsvData = function() {
-        if (scheduleData.length === 0) { 
-            alert('ダウンロードするデータがありません。'); 
-            return; 
-        }
-        let csvContent = "data:text/csv;charset=utf-8,\uFEFFお名前,参加可否,開始時間,終了時間,備考\n";
-        scheduleData.forEach(item => {
-            csvContent += `"${item.name}","${item.status}","${item.startTime}","${item.endTime}","${item.memo}"\n`;
-        });
-        const link = document.createElement("a");
-        link.setAttribute("href", encodeURI(csvContent));
-        link.setAttribute("download", "schedule.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
+    // 初期描画
+    renderTable();
 </script>
+
 </body>
 </html>
