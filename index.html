@@ -41,11 +41,10 @@
             const data = snapshot.val();
 
             if (!data) {
-                tableBody.innerHTML = `<tr><td colspan="${slots.length + 2}" style="color:#999; padding:20px;">まだ登録はありません</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="${slots.length + 3}" style="color:#999; padding:20px;">まだ登録はありません</td></tr>`;
                 return;
             }
 
-            // 取得したデータをループ処理してテーブルに追加
             Object.keys(data).forEach((key) => {
                 const user = data[key];
                 const tr = document.createElement('tr');
@@ -69,6 +68,13 @@
                     }
                     tr.appendChild(td);
                 });
+
+                // 備考（新設）
+                const memoTd = document.createElement('td');
+                memoTd.textContent = user.memo || ''; // 備考がない場合は空欄
+                memoTd.style.textAlign = 'left';
+                memoTd.style.fontSize = '13px';
+                tr.appendChild(memoTd);
                 
                 // 削除ボタン
                 const actionTd = document.createElement('td');
@@ -91,7 +97,9 @@
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             const nameInput = document.getElementById('userName');
+            const memoInput = document.getElementById('userMemo');
             const name = nameInput.value.trim();
+            const memo = memoInput.value.trim();
             
             const checkedTimes = [];
             slots.forEach((slot, i) => {
@@ -102,13 +110,15 @@
             });
 
             if (name) {
-                // Firebaseにプッシュ送信
+                // Firebaseにプッシュ送信（memoも一緒につける）
                 push(dbRef, {
                     name: name,
-                    times: checkedTimes
+                    times: checkedTimes,
+                    memo: memo
                 }).then(() => {
                     // 入力フォームをクリア
                     nameInput.value = '';
+                    memoInput.value = '';
                     slots.forEach((slot, i) => {
                         document.getElementById(`t${i+1}`).checked = false;
                     });
@@ -131,7 +141,7 @@
             align-items: center;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px; /* 備考追加に伴い少し幅を広げました */
             width: 100%;
             background: #fff;
             padding: 25px;
@@ -299,6 +309,11 @@
                     <div><input type="checkbox" id="t10" class="time-checkbox" value="16:30-17:00"><label for="t10" class="time-label">16:30-17:00</label></div>
                 </div>
             </div>
+
+            <div class="form-group">
+                <label for="userMemo">備考（一言、連絡事項など）</label>
+                <input type="text" id="userMemo" placeholder="例：15時頃に一度抜けます、遅れて参加します など">
+            </div>
             
             <button type="submit" class="btn-submit">この時間で登録する</button>
         </form>
@@ -320,11 +335,11 @@
                     <th>15:30<br>16:00</th>
                     <th>16:00<br>16:30</th>
                     <th>16:30<br>17:00</th>
-                    <th>管理</th>
+                    <th>備考</th> <th>管理</th>
                 </tr>
             </thead>
             <tbody id="attendanceBody">
-                <tr><td colspan="12" style="color:#999; padding:20px;">読み込み中...</td></tr>
+                <tr><td colspan="13" style="color:#999; padding:20px;">読み込み中...</td></tr>
             </tbody>
         </table>
     </div>
