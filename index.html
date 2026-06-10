@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>御影会スケジューラー</title>
+    <title>イベント時間調整スケジューラー</title>
     <style>
         :root {
             --primary-color: #2b579a;
@@ -34,7 +34,7 @@
         .form-row { display: flex; gap: 15px; flex-wrap: wrap; }
         .form-row .form-group { flex: 1; min-width: 120px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
-        input[type="text"], input[type="time"], select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 14px; }
+        input[type="text"], input[type="time"], select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 14px; color: #333; }
         button { background-color: var(--primary-color); color: white; border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; }
         button:hover { background-color: var(--primary-hover); }
         .table-container { overflow-x: auto; }
@@ -57,31 +57,38 @@
 
 <div class="container">
     <header>
-        <h1>御影会調整スケジューラー</h1>
-        <p>7月12日　12時から17時
-各自の参加可能な時間帯を入力して「登録」を押してください</p>
+        <h1>御影会時間調整スケジューラー</h1>
+        <p>各自の参加可能な時間帯を入力して「登録」を押してください</p>
     </header>
 
     <div class="card">
         <h2>あなたの予定を入力</h2>
-        <form id="schedulerForm">
+        <form id="schedulerForm" onsubmit="addSchedule(event)">
             <div class="form-group">
                 <label for="name">お名前 <span style="color:red;">*</span></label>
                 <input type="text" id="name" placeholder="例：山田 太郎" required>
             </div>
-       
+            <div class="form-row">
                 <div class="form-group">
-                    <label for="startTime">来る時間</label>
+                    <label for="status">参加可否</label>
+                    <select id="status">
+                        <option value="〇">〇 参加可能</option>
+                        <option value="△">△ 途中有り/未定</option>
+                        <option value="×">× 不参加</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="startTime">開始時間</label>
                     <input type="time" id="startTime" value="13:00">
                 </div>
                 <div class="form-group">
-                    <label for="endTime">帰る時間</label>
+                    <label for="endTime">終了時間</label>
                     <input type="time" id="endTime" value="18:00">
                 </div>
             </div>
             <div class="form-group">
                 <label for="memo">備考・連絡事項</label>
-                <input type="text" id="memo" placeholder="例：15時頃に一度抜けます、二次会いけます等">
+                <input type="text" id="memo" placeholder="例：15時頃に一度抜けます、片付け残れます等">
             </div>
             <button type="submit">この内容で登録する</button>
         </form>
@@ -108,26 +115,52 @@
 
     <div class="download-box">
         <p style="margin-bottom: 10px;">全員の入力が終わったら、管理者は以下のボタンからデータを保存（バックアップ）できます。</p>
-        <button id="downloadCsv">CSV形式でデータをダウンロード</button>
+        <button id="downloadCsv" onclick="downloadCsvData()">CSV形式でデータをダウンロード</button>
     </div>
 </div>
 
 <script>
-    const STORAGE_KEY = 'event_scheduler_data_2026';
+    // メモリ上の配列だけでシンプルに管理（ブラウザエラーの起きない設計）
     let scheduleData = [];
 
-    function init() {
-        const savedData = localStorage.getItem(STORAGE_KEY);
-        if (savedData) {
-            try { scheduleData = JSON.parse(savedData); } catch (e) { scheduleData = []; }
+    // フォーム送信時に呼び出される関数
+    function addSchedule(event) {
+        event.preventDefault(); // 画面リロードを防ぐ
+        
+        try {
+            const name = document.getElementById('name').value.trim();
+            const status = document.getElementById('status').value;
+            const startTime = document.getElementById('startTime').value || '--:--';
+            const endTime = document.getElementById('endTime').value || '--:--';
+            const memo = document.getElementById('memo').value.trim();
+
+            if (!name) {
+                alert('お名前を入力してください。');
+                return;
+            }
+
+            // 配列にデータを追加
+            scheduleData.push({ name, status, startTime, endTime, memo });
+            
+            // テーブルを表示更新
+            renderTable();
+            
+            // 入力欄をクリア
+            document.getElementById('name').value = '';
+            document.getElementById('memo').value = '';
+            
+        } catch (error) {
+            alert('登録中にエラーが発生しました: ' + error.message);
         }
-        renderTable();
     }
 
+    // テーブルを描画する関数
     function renderTable() {
         const tbody = document.getElementById('tableBody');
         const noData = document.getElementById('noDataMessage');
+        
         tbody.innerHTML = '';
+
         if (scheduleData.length === 0) {
             noData.style.display = 'block';
             return;
@@ -136,13 +169,20 @@
 
         scheduleData.forEach((item, index) => {
             const tr = document.createElement('tr');
-            let badgeClass = item.status === '〇' ? 'status-ok' : (item.status === '△' ? 'status-pending' : 'status-ng');
-            let timeText = item.status !== '×' ? `${item.startTime} 〜 ${item.endTime}` : ' - ';
+            
+            let badgeClass = 'status-ok';
+            if (item.status === '△') badgeClass = 'status-pending';
+            if (item.status === '×') badgeClass = 'status-ng';
+            
+            let timeText = ' - ';
+            if (item.status !== '×') {
+                timeText = `${item.startTime} 〜 ${item.endTime}`;
+            }
 
             tr.innerHTML = `
                 <td style="font-weight: bold;">${escapeHtml(item.name)}</td>
-                <td><span class="status-badge ${badgeClass}">${item.status}</span></td>
-                <td>${timeText}</td>
+                <td><span class="status-badge ${badgeClass}">${escapeHtml(item.status)}</span></td>
+                <td>${escapeHtml(timeText)}</td>
                 <td style="color: #555;">${escapeHtml(item.memo || '-')}</td>
                 <td><button class="delete-btn" onclick="deleteItem(${index})">削除</button></td>
             `;
@@ -155,31 +195,20 @@
         return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    document.getElementById('schedulerForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const name = document.getElementById('name').value.trim();
-        const status = document.getElementById('status').value;
-        const startTime = document.getElementById('startTime').value;
-        const endTime = document.getElementById('endTime').value;
-        const memo = document.getElementById('memo').value.trim();
-
-        scheduleData.push({ name, status, startTime, endTime, memo });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(scheduleData));
-        renderTable();
-        document.getElementById('name').value = '';
-        document.getElementById('memo').value = '';
-    });
-
+    // 削除機能
     window.deleteItem = function(index) {
         if (confirm('この回答を削除してもよろしいですか？')) {
             scheduleData.splice(index, 1);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(scheduleData));
             renderTable();
         }
     };
 
-    document.getElementById('downloadCsv').addEventListener('click', function() {
-        if (scheduleData.length === 0) { alert('データがありません。'); return; }
+    // CSVダウンロード機能
+    window.downloadCsvData = function() {
+        if (scheduleData.length === 0) { 
+            alert('ダウンロードするデータがありません。'); 
+            return; 
+        }
         let csvContent = "data:text/csv;charset=utf-8,\uFEFFお名前,参加可否,開始時間,終了時間,備考\n";
         scheduleData.forEach(item => {
             csvContent += `"${item.name}","${item.status}","${item.startTime}","${item.endTime}","${item.memo}"\n`;
@@ -190,9 +219,7 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    });
-
-    init();
+    };
 </script>
 </body>
 </html>
