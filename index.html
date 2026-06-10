@@ -4,6 +4,121 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>御影会 スケジュール調整（7月12日）</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // --------------------------------------------------
+        // 【重要】Firebaseのコンソールから取得した設定に置き換えてください
+        // --------------------------------------------------
+        const firebaseConfig = {
+  apiKey: "AIzaSyC0WX-RQuayzPqtN9PlLyxrwmGN1LmsF6U",
+  authDomain: "mikagekai.firebaseapp.com",
+  projectId: "mikagekai",
+  storageBucket: "mikagekai.firebasestorage.app",
+  messagingSenderId: "537012192930",
+  appId: "1:537012192930:web:f1b58311a22eb541ccf9fb",
+  measurementId: "G-B5TX35Z8TV"
+};
+
+        // Firebaseの初期化
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const dbRef = ref(db, 'mikagekai_schedule');
+
+        // 時間スロットの定義
+        const slots = [
+            "12:00-12:30", "12:30-13:00", "13:00-13:30", "13:30-14:00", "14:00-14:30",
+            "14:30-15:00", "15:00-15:30", "15:30-16:00", "16:00-16:30", "16:30-17:00"
+        ];
+
+        const form = document.getElementById('scheduleForm');
+        const tableBody = document.getElementById('attendanceBody');
+
+        // データベースからリアルタイムにデータを取得してテーブルを描画
+        onValue(dbRef, (snapshot) => {
+            tableBody.innerHTML = '';
+            const data = snapshot.val();
+
+            if (!data) {
+                tableBody.innerHTML = `<tr><td colspan="${slots.length + 2}" style="color:#999; padding:20px;">まだ登録はありません</td></tr>`;
+                return;
+            }
+
+            // 取得したデータをループ処理してテーブルに追加
+            Object.keys(data).forEach((key) => {
+                const user = data[key];
+                const tr = document.createElement('tr');
+                
+                // 名前
+                const nameTd = document.createElement('td');
+                nameTd.textContent = user.name;
+                nameTd.style.fontWeight = 'bold';
+                tr.appendChild(nameTd);
+                
+                // 各時間枠のステータス
+                slots.forEach(slot => {
+                    const td = document.createElement('td');
+                    td.classList.add('status-cell');
+                    if (user.times && user.times.includes(slot)) {
+                        td.textContent = '○';
+                        td.classList.add('status-ok');
+                    } else {
+                        td.textContent = '-';
+                        td.classList.add('status-no');
+                    }
+                    tr.appendChild(td);
+                });
+                
+                // 削除ボタン
+                const actionTd = document.createElement('td');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '削除';
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.onclick = () => {
+                    if (confirm(`${user.name}さんのデータを削除しますか？`)) {
+                        remove(ref(db, `mikagekai_schedule/${key}`));
+                    }
+                };
+                actionTd.appendChild(deleteBtn);
+                tr.appendChild(actionTd);
+                
+                tableBody.appendChild(tr);
+            });
+        });
+
+        // フォーム送信時の処理（データ追加）
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nameInput = document.getElementById('userName');
+            const name = nameInput.value.trim();
+            
+            const checkedTimes = [];
+            slots.forEach((slot, i) => {
+                const checkbox = document.getElementById(`t${i+1}`);
+                if (checkbox.checked) {
+                    checkedTimes.push(slot);
+                }
+            });
+
+            if (name) {
+                // Firebaseにプッシュ送信
+                push(dbRef, {
+                    name: name,
+                    times: checkedTimes
+                }).then(() => {
+                    // 入力フォームをクリア
+                    nameInput.value = '';
+                    slots.forEach((slot, i) => {
+                        document.getElementById(`t${i+1}`).checked = false;
+                    });
+                }).catch((error) => {
+                    alert("エラーが発生しました: " + error.message);
+                });
+            }
+        });
+    </script>
+
     <style>
         body {
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
@@ -172,46 +287,16 @@
             <div class="form-group">
                 <label>参加可能な時間帯（複数選択可）</label>
                 <div class="time-grid">
-                    <div>
-                        <input type="checkbox" id="t1" class="time-checkbox" value="12:00-12:30">
-                        <label for="t1" class="time-label">12:00-12:30</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="t2" class="time-checkbox" value="12:30-13:00">
-                        <label for="t2" class="time-label">12:30-13:00</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="t3" class="time-checkbox" value="13:00-13:30">
-                        <label for="t3" class="time-label">13:00-13:30</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="t4" class="time-checkbox" value="13:30-14:00">
-                        <label for="t4" class="time-label">13:30-14:00</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="t5" class="time-checkbox" value="14:00-14:30">
-                        <label for="t5" class="time-label">14:00-14:30</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="t6" class="time-checkbox" value="14:30-15:00">
-                        <label for="t6" class="time-label">14:30-15:00</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="t7" class="time-checkbox" value="15:00-15:30">
-                        <label for="t7" class="time-label">15:00-15:30</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="t8" class="time-checkbox" value="15:30-16:00">
-                        <label for="t8" class="time-label">15:30-16:00</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="t9" class="time-checkbox" value="16:00-16:30">
-                        <label for="t9" class="time-label">16:00-16:30</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="t10" class="time-checkbox" value="16:30-17:00">
-                        <label for="t10" class="time-label">16:30-17:00</label>
-                    </div>
+                    <div><input type="checkbox" id="t1" class="time-checkbox" value="12:00-12:30"><label for="t1" class="time-label">12:00-12:30</label></div>
+                    <div><input type="checkbox" id="t2" class="time-checkbox" value="12:30-13:00"><label for="t2" class="time-label">12:30-13:00</label></div>
+                    <div><input type="checkbox" id="t3" class="time-checkbox" value="13:00-13:30"><label for="t3" class="time-label">13:00-13:30</label></div>
+                    <div><input type="checkbox" id="t4" class="time-checkbox" value="13:30-14:00"><label for="t4" class="time-label">13:30-14:00</label></div>
+                    <div><input type="checkbox" id="t5" class="time-checkbox" value="14:00-14:30"><label for="t5" class="time-label">14:00-14:30</label></div>
+                    <div><input type="checkbox" id="t6" class="time-checkbox" value="14:30-15:00"><label for="t6" class="time-label">14:30-15:00</label></div>
+                    <div><input type="checkbox" id="t7" class="time-checkbox" value="15:00-15:30"><label for="t7" class="time-label">15:00-15:30</label></div>
+                    <div><input type="checkbox" id="t8" class="time-checkbox" value="15:30-16:00"><label for="t8" class="time-label">15:30-16:00</label></div>
+                    <div><input type="checkbox" id="t9" class="time-checkbox" value="16:00-16:30"><label for="t9" class="time-label">16:00-16:30</label></div>
+                    <div><input type="checkbox" id="t10" class="time-checkbox" value="16:30-17:00"><label for="t10" class="time-label">16:30-17:00</label></div>
                 </div>
             </div>
             
@@ -239,112 +324,16 @@
                 </tr>
             </thead>
             <tbody id="attendanceBody">
-                </tbody>
+                <tr><td colspan="12" style="color:#999; padding:20px;">読み込み中...</td></tr>
+            </tbody>
         </table>
     </div>
 
     <div class="summary-box">
-        <strong>💡 データの保存について:</strong><br>
-        このページに入力されたデータは、お使いのブラウザ（LocalStorage）に自動保存されます。同じパソコンやスマホであれば、ページを閉じてもデータは残ります。
+        <strong>🌐 リアルタイム同期中:</strong><br>
+        このページはネット上のデータベースと同期しています。誰かが登録・削除を行うと、全員の画面へリアルタイムに自動反映されます。
     </div>
 </div>
-
-<script>
-    const slots = [
-        "12:00-12:30", "12:30-13:00", "13:00-13:30", "13:30-14:00", "14:00-14:30",
-        "14:30-15:00", "15:00-15:30", "15:30-16:00", "16:00-16:30", "16:30-17:00"
-    ];
-
-    // ローカルストレージから読み込み
-    let attendanceData = JSON.parse(localStorage.getItem('mikagekai_schedule')) || [];
-
-    const form = document.getElementById('scheduleForm');
-    const tableBody = document.getElementById('attendanceBody');
-
-    // テーブルの描画
-    function renderTable() {
-        tableBody.innerHTML = '';
-        
-        if (attendanceData.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="${slots.length + 2}" style="color:#999; padding:20px;">まだ登録はありません</td></tr>`;
-            return;
-        }
-
-        attendanceData.forEach((user, index) => {
-            const tr = document.createElement('tr');
-            
-            // 名前
-            const nameTd = document.createElement('td');
-            nameTd.textContent = user.name;
-            nameTd.style.fontWeight = 'bold';
-            tr.appendChild(nameTd);
-            
-            // 各時間枠のステータス
-            slots.forEach(slot => {
-                const td = document.createElement('td');
-                td.classList.add('status-cell');
-                if (user.times.includes(slot)) {
-                    td.textContent = '○';
-                    td.classList.add('status-ok');
-                } else {
-                    td.textContent = '-';
-                    td.classList.add('status-no');
-                }
-                tr.appendChild(td);
-            });
-            
-            // 削除ボタン
-            const actionTd = document.createElement('td');
-            const deleteBtn = document.createElement('button');
-            deleteBtn.textContent = '削除';
-            deleteBtn.classList.add('delete-btn');
-            deleteBtn.onclick = () => deleteUser(index);
-            actionTd.appendChild(deleteBtn);
-            tr.appendChild(actionTd);
-            
-            tableBody.appendChild(tr);
-        });
-    }
-
-    // データ追加
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const nameInput = document.getElementById('userName');
-        const name = nameInput.value.trim();
-        
-        const checkedTimes = [];
-        slots.forEach((slot, i) => {
-            const checkbox = document.getElementById(`t${i+1}`);
-            if (checkbox.checked) {
-                checkedTimes.push(slot);
-            }
-        });
-
-        if (name) {
-            attendanceData.push({ name: name, times: checkedTimes });
-            localStorage.setItem('mikagekai_schedule', JSON.stringify(attendanceData));
-            renderTable();
-            
-            // フォームリセット
-            nameInput.value = '';
-            slots.forEach((slot, i) => {
-                document.getElementById(`t${i+1}`).checked = false;
-            });
-        }
-    });
-
-    // データ削除
-    function deleteUser(index) {
-        if (confirm(`${attendanceData[index].name}さんのデータを削除しますか？`)) {
-            attendanceData.splice(index, 1);
-            localStorage.setItem('mikagekai_schedule', JSON.stringify(attendanceData));
-            renderTable();
-        }
-    }
-
-    // 初期描画
-    renderTable();
-</script>
 
 </body>
 </html>
